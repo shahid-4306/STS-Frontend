@@ -1,11 +1,11 @@
 {
   "/api": {
-    "target": "http://localhost:5000",
+    "target": "https://sts-backend-three.vercel.app",
     "secure": false,
     "changeOrigin": true
   },
   "/uploads": {
-    "target": "http://localhost:5000",
+    "target": "https://sts-backend-three.vercel.app",
     "secure": false,
     "changeOrigin": true
   }
