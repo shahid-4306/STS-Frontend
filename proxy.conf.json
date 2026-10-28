@@ -1,0 +1,12 @@
+{
+  "/api": {
+    "target": "https://sts-backend-three.vercel.app",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/uploads": {
+    "target": "https://sts-backend-three.vercel.app",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
