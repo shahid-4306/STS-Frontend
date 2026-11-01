@@ -72,8 +72,8 @@ import { ToastService } from '../../services/toast.service';
             <div class="invoice-grid">
               <div class="invoice-box">
                 <h4 style="font-size:13px;">Bill To</h4>
-                <p>
-                  <strong style="color:#1d4ed8;font-size:16px;">{{
+                <p style="color:#1d4ed8;">
+                  <strong style="font-size:16px;">{{
                     customer()?.fullName || '—'
                   }}</strong
                   ><br />{{ customer()?.city }}<br />{{ customer()?.phone }}
