@@ -943,7 +943,7 @@ export class NewBillComponent implements OnInit {
     this.grandTotal =
       subtotal -
       (Number(this.discount) || 0) +
-      (Number(this.deliveryCharges) || 0) +
+      (Number(this.deliveryCharges) || 0) -
       (Number(this.rentCharges) || 0) +
       (Number(this.extraCharges) || 0) +
       this.previousArrears -
