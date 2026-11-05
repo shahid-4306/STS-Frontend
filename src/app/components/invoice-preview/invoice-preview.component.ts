@@ -668,9 +668,10 @@ import { ToastService } from '../../services/toast.service';
                 <span>Extra Charges</span
                 ><span class="v">{{ fmtMoney(bill.extraCharges) }}</span>
               </div>
-              <div class="summary-line" *ngIf="bill.previousArrears > 0">
+              <!-- CHANGED: uses previousArrearsShown (server value, or derived from Grand Total) -->
+              <div class="summary-line" *ngIf="previousArrearsShown > 0">
                 <span>Previous Arrears</span
-                ><span class="v">{{ fmtMoney(bill.previousArrears) }}</span>
+                ><span class="v">{{ fmtMoney(previousArrearsShown) }}</span>
               </div>
               <div class="summary-line" *ngIf="bill.advanceUsed > 0">
                 <span>Advance Used</span
@@ -767,6 +768,8 @@ export class InvoicePreviewComponent implements OnChanges {
   savedImages: InvoiceImage[] = [];
   /** "Received Amount (date)" rows: each amount sits on one line with the date it was received. */
   receivedLines: { amount: number; date: string | null }[] = [];
+  /** CHANGED: Previous Arrears shown on the invoice (server value, or derived from Grand Total). */
+  previousArrearsShown = 0;
 
   constructor(
     private invoiceImageService: InvoiceImageService,
@@ -777,6 +780,7 @@ export class InvoicePreviewComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['bill'] && this.bill) {
       this.buildSectionsAndFlattenItems();
+      this.resolvePreviousArrears(); // CHANGED
       this.loadReceivedLines();
       this.savedImages = [];
       this.invoiceImageService.listForBill(this.bill._id).subscribe({
@@ -784,6 +788,37 @@ export class InvoicePreviewComponent implements OnChanges {
         error: () => {},
       });
     }
+  }
+
+  /**
+   * CHANGED (new method): decides which Previous Arrears value the invoice shows.
+   * If the bill carries previousArrears (> 0) it is used as is. Otherwise it is
+   * derived from the bill's own figures, using the same formula the Billing
+   * Summary uses:
+   *   grandTotal = subtotal - discount + delivery - rent + extra
+   *                + previousArrears - advanceUsed
+   * so the Previous Arrears row (and the saved image) never goes missing.
+   */
+  private resolvePreviousArrears(): void {
+    if (!this.bill) {
+      this.previousArrearsShown = 0;
+      return;
+    }
+    const b = this.bill;
+    const stored = Number(b.previousArrears) || 0;
+    if (stored > 0) {
+      this.previousArrearsShown = stored;
+      return;
+    }
+    const derived =
+      (Number(b.grandTotal) || 0) -
+      ((Number(b.subtotal) || 0) -
+        (Number(b.discount) || 0) +
+        (Number(b.deliveryCharges) || 0) -
+        (Number(b.rentCharges) || 0) +
+        (Number(b.extraCharges) || 0)) +
+      (Number(b.advanceUsed) || 0);
+    this.previousArrearsShown = derived > 0.5 ? Math.round(derived * 100) / 100 : 0;
   }
 
   /**
