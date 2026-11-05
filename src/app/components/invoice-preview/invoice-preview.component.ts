@@ -8,13 +8,14 @@
 // // // } from '@angular/core';
 // // // import { CommonModule } from '@angular/common';
 // // // import html2canvas from 'html2canvas';
-// // // import { Bill, Customer, InvoiceImage } from '../../models';
+// // // import { Bill, Customer, InvoiceImage, Payment } from '../../models';
 // // // import {
 // // //   fmtDate,
 // // //   fmtMoney,
 // // //   sanitizeFileNamePart,
 // // // } from '../../shared/format.util';
 // // // import { InvoiceImageService } from '../../services/invoice-image.service';
+// // // import { PaymentService } from '../../services/payment.service';
 // // // import { ToastService } from '../../services/toast.service';
 
 // // // @Component({
@@ -151,9 +152,12 @@
 // // //                 <span>Grand Total</span
 // // //                 ><span class="v">{{ fmtMoney(bill.grandTotal) }}</span>
 // // //               </div>
-// // //               <div class="summary-line">
-// // //                 <span>Received Amount</span
-// // //                 ><span class="v">{{ fmtMoney(bill.receivedAmount) }}</span>
+// // //               <div class="summary-line" *ngFor="let r of receivedLines">
+// // //                 <span style="white-space:nowrap;"
+// // //                   >Received Amount<ng-container *ngIf="r.date">
+// // //                     ({{ fmtDate(r.date) }})</ng-container
+// // //                   ></span
+// // //                 ><span class="v">{{ fmtMoney(r.amount) }}</span>
 // // //               </div>
 // // //               <div class="summary-line">
 // // //                 <span>Remaining Balance</span>
@@ -233,21 +237,71 @@
 // // //   hasPersons = false;
 // // //   downloadingImage = false;
 // // //   savedImages: InvoiceImage[] = [];
+// // //   /** "Received Amount (date)" rows: each amount sits on one line with the date it was received. */
+// // //   receivedLines: { amount: number; date: string | null }[] = [];
 
 // // //   constructor(
 // // //     private invoiceImageService: InvoiceImageService,
+// // //     private paymentService: PaymentService,
 // // //     private toast: ToastService,
 // // //   ) {}
 
 // // //   ngOnChanges(changes: SimpleChanges): void {
 // // //     if (changes['bill'] && this.bill) {
 // // //       this.buildSectionsAndFlattenItems();
+// // //       this.loadReceivedLines();
 // // //       this.savedImages = [];
 // // //       this.invoiceImageService.listForBill(this.bill._id).subscribe({
 // // //         next: (res) => (this.savedImages = res.data),
 // // //         error: () => {},
 // // //       });
 // // //     }
+// // //   }
+
+// // //   /**
+// // //    * Builds the Received Amount rows. Shows them straight away without a date,
+// // //    * then adds the real receiving date(s) once the bill's payments are loaded.
+// // //    * The amount always matches bill.receivedAmount: if the payment records do
+// // //    * not add up to it (e.g. old bills), a single row is shown with the latest
+// // //    * payment date instead.
+// // //    */
+// // //   private loadReceivedLines() {
+// // //     if (!this.bill) return;
+// // //     const bill = this.bill;
+// // //     const total = Number(bill.receivedAmount) || 0;
+// // //     this.receivedLines = [{ amount: total, date: null }];
+// // //     if (total <= 0) return;
+
+// // //     this.paymentService.list({ billId: bill._id }).subscribe({
+// // //       next: (res) => {
+// // //         if (this.bill?._id !== bill._id) return;
+// // //         const payments: Payment[] = (res.data || [])
+// // //           .filter((p) => Number(p.receivedAmount) > 0)
+// // //           .sort(
+// // //             (a, b) =>
+// // //               new Date(a.paymentDate).getTime() -
+// // //               new Date(b.paymentDate).getTime(),
+// // //           );
+// // //         if (!payments.length) return;
+// // //         const sum = payments.reduce(
+// // //           (s, p) => s + (Number(p.receivedAmount) || 0),
+// // //           0,
+// // //         );
+// // //         this.receivedLines =
+// // //           Math.abs(sum - total) < 0.5
+// // //             ? payments.map((p) => ({
+// // //                 amount: Number(p.receivedAmount) || 0,
+// // //                 date: p.paymentDate,
+// // //               }))
+// // //             : [
+// // //                 {
+// // //                   amount: total,
+// // //                   date: payments[payments.length - 1].paymentDate,
+// // //                 },
+// // //               ];
+// // //       },
+// // //       error: () => {},
+// // //     });
 // // //   }
 
 // // //   // Ye method 'groups' (person names) ko 'items' ke sath map karta hai
@@ -602,23 +656,23 @@
 // //                 <span>Discount</span
 // //                 ><span class="v">- {{ fmtMoney(bill.discount) }}</span>
 // //               </div>
-// //               <div class="summary-line" *ngIf="bill.deliveryCharges > 0">
+// //               <div class="summary-line" *ngIf="asNumber(bill.deliveryCharges) > 0">
 // //                 <span>Delivery Charges</span
 // //                 ><span class="v">{{ fmtMoney(bill.deliveryCharges) }}</span>
 // //               </div>
-// //               <div class="summary-line" *ngIf="bill.rentCharges > 0">
+// //               <div class="summary-line" *ngIf="asNumber(bill.rentCharges) > 0">
 // //                 <span>Rent Charges</span
 // //                 ><span class="v">{{ fmtMoney(bill.rentCharges) }}</span>
 // //               </div>
-// //               <div class="summary-line" *ngIf="bill.extraCharges > 0">
+// //               <div class="summary-line" *ngIf="asNumber(bill.extraCharges) > 0">
 // //                 <span>Extra Charges</span
 // //                 ><span class="v">{{ fmtMoney(bill.extraCharges) }}</span>
 // //               </div>
-// //               <div class="summary-line" *ngIf="bill.previousArrears > 0">
+// //               <div class="summary-line" *ngIf="asNumber(bill.previousArrears) > 0">
 // //                 <span>Previous Arrears</span
 // //                 ><span class="v">{{ fmtMoney(bill.previousArrears) }}</span>
 // //               </div>
-// //               <div class="summary-line" *ngIf="bill.advanceUsed > 0">
+// //               <div class="summary-line" *ngIf="asNumber(bill.advanceUsed) > 0">
 // //                 <span>Advance Used</span
 // //                 ><span class="v">- {{ fmtMoney(bill.advanceUsed) }}</span>
 // //               </div>
@@ -714,6 +768,13 @@
 // //   /** "Received Amount (date)" rows: each amount sits on one line with the date it was received. */
 // //   receivedLines: { amount: number; date: string | null }[] = [];
 
+// //   /**
+// //    * Flag that becomes true only when every async piece of data needed by
+// //    * the invoice image has finished loading. The image capture waits for
+// //    * this so previous arrears / received lines never come out missing.
+// //    */
+// //   private dataReady = false;
+
 // //   constructor(
 // //     private invoiceImageService: InvoiceImageService,
 // //     private paymentService: PaymentService,
@@ -722,6 +783,7 @@
 
 // //   ngOnChanges(changes: SimpleChanges): void {
 // //     if (changes['bill'] && this.bill) {
+// //       this.dataReady = false;
 // //       this.buildSectionsAndFlattenItems();
 // //       this.loadReceivedLines();
 // //       this.savedImages = [];
@@ -732,6 +794,12 @@
 // //     }
 // //   }
 
+// //   /** Safe numeric coercion for template conditions (handles undefined / "0" / "0.00"). */
+// //   asNumber(v: any): number {
+// //     const n = Number(v);
+// //     return isNaN(n) ? 0 : n;
+// //   }
+
 // //   /**
 // //    * Builds the Received Amount rows. Shows them straight away without a date,
 // //    * then adds the real receiving date(s) once the bill's payments are loaded.
@@ -740,11 +808,17 @@
 // //    * payment date instead.
 // //    */
 // //   private loadReceivedLines() {
-// //     if (!this.bill) return;
+// //     if (!this.bill) {
+// //       this.dataReady = true;
+// //       return;
+// //     }
 // //     const bill = this.bill;
 // //     const total = Number(bill.receivedAmount) || 0;
 // //     this.receivedLines = [{ amount: total, date: null }];
-// //     if (total <= 0) return;
+// //     if (total <= 0) {
+// //       this.dataReady = true;
+// //       return;
+// //     }
 
 // //     this.paymentService.list({ billId: bill._id }).subscribe({
 // //       next: (res) => {
@@ -756,7 +830,10 @@
 // //               new Date(a.paymentDate).getTime() -
 // //               new Date(b.paymentDate).getTime(),
 // //           );
-// //         if (!payments.length) return;
+// //         if (!payments.length) {
+// //           this.dataReady = true;
+// //           return;
+// //         }
 // //         const sum = payments.reduce(
 // //           (s, p) => s + (Number(p.receivedAmount) || 0),
 // //           0,
@@ -773,8 +850,11 @@
 // //                   date: payments[payments.length - 1].paymentDate,
 // //                 },
 // //               ];
+// //         this.dataReady = true;
 // //       },
-// //       error: () => {},
+// //       error: () => {
+// //         this.dataReady = true;
+// //       },
 // //     });
 // //   }
 
@@ -924,56 +1004,86 @@
 // //     const fileName = this.buildImageFileName();
 // //     const billId = this.bill._id;
 
-// //     // 🔥 SAB SE BADA FIX: 500ms ka delay (setTimeout)
-// //     // Ye delay html2canvas ko waqt deta hai ke wo DOM ko properly render kar le
-// //     // aur Person Name wali row blank na aaye.
-// //     setTimeout(() => {
-// //       const content = document.getElementById('invoiceContent');
-// //       if (!content) {
-// //         this.downloadingImage = false;
-// //         this.toast.error('Could not find the invoice content to capture.');
+// //     // Wait until all async data (received lines, arrears, etc.) is loaded.
+// //     // Then wait for fonts/icons to be ready before capturing.
+// //     this.waitForDataThenCapture(billId, fileName);
+// //   }
+
+// //   /**
+// //    * Waits for the async data flag (dataReady) then for web fonts to finish
+// //    * loading, and only then runs html2canvas. This guarantees the saved image
+// //    * contains every row (previous arrears, received amounts, person names…)
+// //    * and never comes out half-rendered.
+// //    */
+// //   private waitForDataThenCapture(billId: string, fileName: string): void {
+// //     const start = Date.now();
+// //     const maxWait = 6000; // safety cap — never hang forever
+
+// //     const poll = () => {
+// //       const timedOut = Date.now() - start > maxWait;
+// //       if (!this.dataReady && !timedOut) {
+// //         setTimeout(poll, 80);
 // //         return;
 // //       }
+// //       // Data is ready (or we've waited long enough) → wait for fonts.
+// //       const fontsReady: Promise<any> =
+// //         (document as any).fonts?.ready ?? Promise.resolve();
+// //       fontsReady.then(() => this.captureAndSave(billId, fileName));
+// //     };
 
-// //       html2canvas(content, {
-// //         backgroundColor: '#ffffff',
-// //         scale: 2,
-// //         useCORS: true,
-// //         logging: false,
-// //       })
-// //         .then((canvas) => {
-// //           if (!canvas || !canvas.width || !canvas.height)
-// //             throw new Error('The captured invoice image came out empty.');
-// //           let dataUrl: string;
-// //           try {
-// //             dataUrl = canvas.toDataURL('image/png');
-// //           } catch {
-// //             throw new Error('The invoice image could not be encoded.');
-// //           }
+// //     poll();
+// //   }
 
-// //           this.triggerDownload(dataUrl, fileName);
-// //           this.invoiceImageService.save(billId, fileName, dataUrl).subscribe({
-// //             next: (res) => {
-// //               this.downloadingImage = false;
-// //               this.savedImages = [res.data, ...this.savedImages];
-// //               this.toast.success('Invoice image downloaded and saved.');
-// //             },
-// //             error: (err) => {
-// //               this.downloadingImage = false;
-// //               this.toast.error(
-// //                 err?.error?.message ||
-// //                   'Image downloaded, but saving it to the server failed.',
-// //               );
-// //             },
-// //           });
-// //         })
-// //         .catch((err: Error) => {
-// //           this.downloadingImage = false;
-// //           this.toast.error(
-// //             err?.message || 'Could not generate the invoice image.',
-// //           );
+// //   private captureAndSave(billId: string, fileName: string): void {
+// //     const content = document.getElementById('invoiceContent');
+// //     if (!content) {
+// //       this.downloadingImage = false;
+// //       this.toast.error('Could not find the invoice content to capture.');
+// //       return;
+// //     }
+
+// //     html2canvas(content, {
+// //       backgroundColor: '#ffffff',
+// //       scale: 2,
+// //       useCORS: true,
+// //       logging: false,
+// //       scrollX: 0,
+// //       scrollY: -window.scrollY,
+// //       windowWidth: content.scrollWidth,
+// //       windowHeight: content.scrollHeight,
+// //     })
+// //       .then((canvas) => {
+// //         if (!canvas || !canvas.width || !canvas.height)
+// //           throw new Error('The captured invoice image came out empty.');
+// //         let dataUrl: string;
+// //         try {
+// //           dataUrl = canvas.toDataURL('image/png');
+// //         } catch {
+// //           throw new Error('The invoice image could not be encoded.');
+// //         }
+
+// //         this.triggerDownload(dataUrl, fileName);
+// //         this.invoiceImageService.save(billId, fileName, dataUrl).subscribe({
+// //           next: (res) => {
+// //             this.downloadingImage = false;
+// //             this.savedImages = [res.data, ...this.savedImages];
+// //             this.toast.success('Invoice image downloaded and saved.');
+// //           },
+// //           error: (err) => {
+// //             this.downloadingImage = false;
+// //             this.toast.error(
+// //               err?.error?.message ||
+// //                 'Image downloaded, but saving it to the server failed.',
+// //             );
+// //           },
 // //         });
-// //     }, 500);
+// //       })
+// //       .catch((err: Error) => {
+// //         this.downloadingImage = false;
+// //         this.toast.error(
+// //           err?.message || 'Could not generate the invoice image.',
+// //         );
+// //       });
 // //   }
 
 // //   redownload(img: InvoiceImage): void {
@@ -1130,23 +1240,29 @@
 //                 <span>Discount</span
 //                 ><span class="v">- {{ fmtMoney(bill.discount) }}</span>
 //               </div>
-//               <div class="summary-line" *ngIf="bill.deliveryCharges > 0">
+//               <div
+//                 class="summary-line"
+//                 *ngIf="asNumber(bill.deliveryCharges) > 0"
+//               >
 //                 <span>Delivery Charges</span
 //                 ><span class="v">{{ fmtMoney(bill.deliveryCharges) }}</span>
 //               </div>
-//               <div class="summary-line" *ngIf="bill.rentCharges > 0">
+//               <div class="summary-line" *ngIf="asNumber(bill.rentCharges) > 0">
 //                 <span>Rent Charges</span
 //                 ><span class="v">{{ fmtMoney(bill.rentCharges) }}</span>
 //               </div>
-//               <div class="summary-line" *ngIf="bill.extraCharges > 0">
+//               <div class="summary-line" *ngIf="asNumber(bill.extraCharges) > 0">
 //                 <span>Extra Charges</span
 //                 ><span class="v">{{ fmtMoney(bill.extraCharges) }}</span>
 //               </div>
-//               <div class="summary-line" *ngIf="bill.previousArrears > 0">
+//               <div
+//                 class="summary-line"
+//                 *ngIf="asNumber(bill.previousArrears) > 0"
+//               >
 //                 <span>Previous Arrears</span
 //                 ><span class="v">{{ fmtMoney(bill.previousArrears) }}</span>
 //               </div>
-//               <div class="summary-line" *ngIf="bill.advanceUsed > 0">
+//               <div class="summary-line" *ngIf="asNumber(bill.advanceUsed) > 0">
 //                 <span>Advance Used</span
 //                 ><span class="v">- {{ fmtMoney(bill.advanceUsed) }}</span>
 //               </div>
@@ -1242,6 +1358,13 @@
 //   /** "Received Amount (date)" rows: each amount sits on one line with the date it was received. */
 //   receivedLines: { amount: number; date: string | null }[] = [];
 
+//   /**
+//    * Flag that becomes true only when every async piece of data needed by
+//    * the invoice image has finished loading. The image capture waits for
+//    * this so previous arrears / received lines never come out missing.
+//    */
+//   private dataReady = false;
+
 //   constructor(
 //     private invoiceImageService: InvoiceImageService,
 //     private paymentService: PaymentService,
@@ -1250,6 +1373,7 @@
 
 //   ngOnChanges(changes: SimpleChanges): void {
 //     if (changes['bill'] && this.bill) {
+//       this.dataReady = false;
 //       this.buildSectionsAndFlattenItems();
 //       this.loadReceivedLines();
 //       this.savedImages = [];
@@ -1260,6 +1384,12 @@
 //     }
 //   }
 
+//   /** Safe numeric coercion for template conditions (handles undefined / "0" / "0.00"). */
+//   asNumber(v: any): number {
+//     const n = Number(v);
+//     return isNaN(n) ? 0 : n;
+//   }
+
 //   /**
 //    * Builds the Received Amount rows. Shows them straight away without a date,
 //    * then adds the real receiving date(s) once the bill's payments are loaded.
@@ -1268,11 +1398,17 @@
 //    * payment date instead.
 //    */
 //   private loadReceivedLines() {
-//     if (!this.bill) return;
+//     if (!this.bill) {
+//       this.dataReady = true;
+//       return;
+//     }
 //     const bill = this.bill;
 //     const total = Number(bill.receivedAmount) || 0;
 //     this.receivedLines = [{ amount: total, date: null }];
-//     if (total <= 0) return;
+//     if (total <= 0) {
+//       this.dataReady = true;
+//       return;
+//     }
 
 //     this.paymentService.list({ billId: bill._id }).subscribe({
 //       next: (res) => {
@@ -1284,7 +1420,10 @@
 //               new Date(a.paymentDate).getTime() -
 //               new Date(b.paymentDate).getTime(),
 //           );
-//         if (!payments.length) return;
+//         if (!payments.length) {
+//           this.dataReady = true;
+//           return;
+//         }
 //         const sum = payments.reduce(
 //           (s, p) => s + (Number(p.receivedAmount) || 0),
 //           0,
@@ -1295,9 +1434,17 @@
 //                 amount: Number(p.receivedAmount) || 0,
 //                 date: p.paymentDate,
 //               }))
-//             : [{ amount: total, date: payments[payments.length - 1].paymentDate }];
+//             : [
+//                 {
+//                   amount: total,
+//                   date: payments[payments.length - 1].paymentDate,
+//                 },
+//               ];
+//         this.dataReady = true;
 //       },
-//       error: () => {},
+//       error: () => {
+//         this.dataReady = true;
+//       },
 //     });
 //   }
 
@@ -1447,56 +1594,86 @@
 //     const fileName = this.buildImageFileName();
 //     const billId = this.bill._id;
 
-//     // 🔥 SAB SE BADA FIX: 500ms ka delay (setTimeout)
-//     // Ye delay html2canvas ko waqt deta hai ke wo DOM ko properly render kar le
-//     // aur Person Name wali row blank na aaye.
-//     setTimeout(() => {
-//       const content = document.getElementById('invoiceContent');
-//       if (!content) {
-//         this.downloadingImage = false;
-//         this.toast.error('Could not find the invoice content to capture.');
+//     // Wait until all async data (received lines, arrears, etc.) is loaded.
+//     // Then wait for fonts/icons to be ready before capturing.
+//     this.waitForDataThenCapture(billId, fileName);
+//   }
+
+//   /**
+//    * Waits for the async data flag (dataReady) then for web fonts to finish
+//    * loading, and only then runs html2canvas. This guarantees the saved image
+//    * contains every row (previous arrears, received amounts, person names…)
+//    * and never comes out half-rendered.
+//    */
+//   private waitForDataThenCapture(billId: string, fileName: string): void {
+//     const start = Date.now();
+//     const maxWait = 6000; // safety cap — never hang forever
+
+//     const poll = () => {
+//       const timedOut = Date.now() - start > maxWait;
+//       if (!this.dataReady && !timedOut) {
+//         setTimeout(poll, 80);
 //         return;
 //       }
+//       // Data is ready (or we've waited long enough) → wait for fonts.
+//       const fontsReady: Promise<any> =
+//         (document as any).fonts?.ready ?? Promise.resolve();
+//       fontsReady.then(() => this.captureAndSave(billId, fileName));
+//     };
 
-//       html2canvas(content, {
-//         backgroundColor: '#ffffff',
-//         scale: 2,
-//         useCORS: true,
-//         logging: false,
-//       })
-//         .then((canvas) => {
-//           if (!canvas || !canvas.width || !canvas.height)
-//             throw new Error('The captured invoice image came out empty.');
-//           let dataUrl: string;
-//           try {
-//             dataUrl = canvas.toDataURL('image/png');
-//           } catch {
-//             throw new Error('The invoice image could not be encoded.');
-//           }
+//     poll();
+//   }
 
-//           this.triggerDownload(dataUrl, fileName);
-//           this.invoiceImageService.save(billId, fileName, dataUrl).subscribe({
-//             next: (res) => {
-//               this.downloadingImage = false;
-//               this.savedImages = [res.data, ...this.savedImages];
-//               this.toast.success('Invoice image downloaded and saved.');
-//             },
-//             error: (err) => {
-//               this.downloadingImage = false;
-//               this.toast.error(
-//                 err?.error?.message ||
-//                   'Image downloaded, but saving it to the server failed.',
-//               );
-//             },
-//           });
-//         })
-//         .catch((err: Error) => {
-//           this.downloadingImage = false;
-//           this.toast.error(
-//             err?.message || 'Could not generate the invoice image.',
-//           );
+//   private captureAndSave(billId: string, fileName: string): void {
+//     const content = document.getElementById('invoiceContent');
+//     if (!content) {
+//       this.downloadingImage = false;
+//       this.toast.error('Could not find the invoice content to capture.');
+//       return;
+//     }
+
+//     html2canvas(content, {
+//       backgroundColor: '#ffffff',
+//       scale: 2,
+//       useCORS: true,
+//       logging: false,
+//       scrollX: 0,
+//       scrollY: -window.scrollY,
+//       windowWidth: content.scrollWidth,
+//       windowHeight: content.scrollHeight,
+//     })
+//       .then((canvas) => {
+//         if (!canvas || !canvas.width || !canvas.height)
+//           throw new Error('The captured invoice image came out empty.');
+//         let dataUrl: string;
+//         try {
+//           dataUrl = canvas.toDataURL('image/png');
+//         } catch {
+//           throw new Error('The invoice image could not be encoded.');
+//         }
+
+//         this.triggerDownload(dataUrl, fileName);
+//         this.invoiceImageService.save(billId, fileName, dataUrl).subscribe({
+//           next: (res) => {
+//             this.downloadingImage = false;
+//             this.savedImages = [res.data, ...this.savedImages];
+//             this.toast.success('Invoice image downloaded and saved.');
+//           },
+//           error: (err) => {
+//             this.downloadingImage = false;
+//             this.toast.error(
+//               err?.error?.message ||
+//                 'Image downloaded, but saving it to the server failed.',
+//             );
+//           },
 //         });
-//     }, 500);
+//       })
+//       .catch((err: Error) => {
+//         this.downloadingImage = false;
+//         this.toast.error(
+//           err?.message || 'Could not generate the invoice image.',
+//         );
+//       });
 //   }
 
 //   redownload(img: InvoiceImage): void {
@@ -1522,6 +1699,7 @@
 //       });
 //   }
 // }
+
 import {
   Component,
   EventEmitter,
@@ -1652,23 +1830,29 @@ import { ToastService } from '../../services/toast.service';
                 <span>Discount</span
                 ><span class="v">- {{ fmtMoney(bill.discount) }}</span>
               </div>
-              <div class="summary-line" *ngIf="bill.deliveryCharges > 0">
+              <div
+                class="summary-line"
+                *ngIf="asNumber(bill.deliveryCharges) > 0"
+              >
                 <span>Delivery Charges</span
                 ><span class="v">{{ fmtMoney(bill.deliveryCharges) }}</span>
               </div>
-              <div class="summary-line" *ngIf="bill.rentCharges > 0">
+              <div class="summary-line" *ngIf="asNumber(bill.rentCharges) > 0">
                 <span>Rent Charges</span
                 ><span class="v">{{ fmtMoney(bill.rentCharges) }}</span>
               </div>
-              <div class="summary-line" *ngIf="bill.extraCharges > 0">
+              <div class="summary-line" *ngIf="asNumber(bill.extraCharges) > 0">
                 <span>Extra Charges</span
                 ><span class="v">{{ fmtMoney(bill.extraCharges) }}</span>
               </div>
-              <div class="summary-line" *ngIf="bill.previousArrears > 0">
+              <div
+                class="summary-line"
+                *ngIf="asNumber(bill.previousArrears) > 0"
+              >
                 <span>Previous Arrears</span
                 ><span class="v">{{ fmtMoney(bill.previousArrears) }}</span>
               </div>
-              <div class="summary-line" *ngIf="bill.advanceUsed > 0">
+              <div class="summary-line" *ngIf="asNumber(bill.advanceUsed) > 0">
                 <span>Advance Used</span
                 ><span class="v">- {{ fmtMoney(bill.advanceUsed) }}</span>
               </div>
@@ -1764,6 +1948,13 @@ export class InvoicePreviewComponent implements OnChanges {
   /** "Received Amount (date)" rows: each amount sits on one line with the date it was received. */
   receivedLines: { amount: number; date: string | null }[] = [];
 
+  /**
+   * Flag that becomes true only when every async piece of data needed by
+   * the invoice image has finished loading. The image capture waits for
+   * this so previous arrears / received lines never come out missing.
+   */
+  private dataReady = false;
+
   constructor(
     private invoiceImageService: InvoiceImageService,
     private paymentService: PaymentService,
@@ -1772,6 +1963,7 @@ export class InvoicePreviewComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['bill'] && this.bill) {
+      this.dataReady = false;
       this.buildSectionsAndFlattenItems();
       this.loadReceivedLines();
       this.savedImages = [];
@@ -1782,6 +1974,12 @@ export class InvoicePreviewComponent implements OnChanges {
     }
   }
 
+  /** Safe numeric coercion for template conditions (handles undefined / "0" / "0.00"). */
+  asNumber(v: any): number {
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  }
+
   /**
    * Builds the Received Amount rows. Shows them straight away without a date,
    * then adds the real receiving date(s) once the bill's payments are loaded.
@@ -1790,11 +1988,17 @@ export class InvoicePreviewComponent implements OnChanges {
    * payment date instead.
    */
   private loadReceivedLines() {
-    if (!this.bill) return;
+    if (!this.bill) {
+      this.dataReady = true;
+      return;
+    }
     const bill = this.bill;
     const total = Number(bill.receivedAmount) || 0;
     this.receivedLines = [{ amount: total, date: null }];
-    if (total <= 0) return;
+    if (total <= 0) {
+      this.dataReady = true;
+      return;
+    }
 
     this.paymentService.list({ billId: bill._id }).subscribe({
       next: (res) => {
@@ -1806,7 +2010,10 @@ export class InvoicePreviewComponent implements OnChanges {
               new Date(a.paymentDate).getTime() -
               new Date(b.paymentDate).getTime(),
           );
-        if (!payments.length) return;
+        if (!payments.length) {
+          this.dataReady = true;
+          return;
+        }
         const sum = payments.reduce(
           (s, p) => s + (Number(p.receivedAmount) || 0),
           0,
@@ -1823,8 +2030,11 @@ export class InvoicePreviewComponent implements OnChanges {
                   date: payments[payments.length - 1].paymentDate,
                 },
               ];
+        this.dataReady = true;
       },
-      error: () => {},
+      error: () => {
+        this.dataReady = true;
+      },
     });
   }
 
@@ -1974,56 +2184,86 @@ export class InvoicePreviewComponent implements OnChanges {
     const fileName = this.buildImageFileName();
     const billId = this.bill._id;
 
-    // 🔥 SAB SE BADA FIX: 500ms ka delay (setTimeout)
-    // Ye delay html2canvas ko waqt deta hai ke wo DOM ko properly render kar le
-    // aur Person Name wali row blank na aaye.
-    setTimeout(() => {
-      const content = document.getElementById('invoiceContent');
-      if (!content) {
-        this.downloadingImage = false;
-        this.toast.error('Could not find the invoice content to capture.');
+    // Wait until all async data (received lines, arrears, etc.) is loaded.
+    // Then wait for fonts/icons to be ready before capturing.
+    this.waitForDataThenCapture(billId, fileName);
+  }
+
+  /**
+   * Waits for the async data flag (dataReady) then for web fonts to finish
+   * loading, and only then runs html2canvas. This guarantees the saved image
+   * contains every row (previous arrears, received amounts, person names…)
+   * and never comes out half-rendered.
+   */
+  private waitForDataThenCapture(billId: string, fileName: string): void {
+    const start = Date.now();
+    const maxWait = 6000; // safety cap — never hang forever
+
+    const poll = () => {
+      const timedOut = Date.now() - start > maxWait;
+      if (!this.dataReady && !timedOut) {
+        setTimeout(poll, 80);
         return;
       }
+      // Data is ready (or we've waited long enough) → wait for fonts.
+      const fontsReady: Promise<any> =
+        (document as any).fonts?.ready ?? Promise.resolve();
+      fontsReady.then(() => this.captureAndSave(billId, fileName));
+    };
 
-      html2canvas(content, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      })
-        .then((canvas) => {
-          if (!canvas || !canvas.width || !canvas.height)
-            throw new Error('The captured invoice image came out empty.');
-          let dataUrl: string;
-          try {
-            dataUrl = canvas.toDataURL('image/png');
-          } catch {
-            throw new Error('The invoice image could not be encoded.');
-          }
+    poll();
+  }
 
-          this.triggerDownload(dataUrl, fileName);
-          this.invoiceImageService.save(billId, fileName, dataUrl).subscribe({
-            next: (res) => {
-              this.downloadingImage = false;
-              this.savedImages = [res.data, ...this.savedImages];
-              this.toast.success('Invoice image downloaded and saved.');
-            },
-            error: (err) => {
-              this.downloadingImage = false;
-              this.toast.error(
-                err?.error?.message ||
-                  'Image downloaded, but saving it to the server failed.',
-              );
-            },
-          });
-        })
-        .catch((err: Error) => {
-          this.downloadingImage = false;
-          this.toast.error(
-            err?.message || 'Could not generate the invoice image.',
-          );
+  private captureAndSave(billId: string, fileName: string): void {
+    const content = document.getElementById('invoiceContent');
+    if (!content) {
+      this.downloadingImage = false;
+      this.toast.error('Could not find the invoice content to capture.');
+      return;
+    }
+
+    html2canvas(content, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      windowWidth: content.scrollWidth,
+      windowHeight: content.scrollHeight,
+    })
+      .then((canvas) => {
+        if (!canvas || !canvas.width || !canvas.height)
+          throw new Error('The captured invoice image came out empty.');
+        let dataUrl: string;
+        try {
+          dataUrl = canvas.toDataURL('image/png');
+        } catch {
+          throw new Error('The invoice image could not be encoded.');
+        }
+
+        this.triggerDownload(dataUrl, fileName);
+        this.invoiceImageService.save(billId, fileName, dataUrl).subscribe({
+          next: (res) => {
+            this.downloadingImage = false;
+            this.savedImages = [res.data, ...this.savedImages];
+            this.toast.success('Invoice image downloaded and saved.');
+          },
+          error: (err) => {
+            this.downloadingImage = false;
+            this.toast.error(
+              err?.error?.message ||
+                'Image downloaded, but saving it to the server failed.',
+            );
+          },
         });
-    }, 500);
+      })
+      .catch((err: Error) => {
+        this.downloadingImage = false;
+        this.toast.error(
+          err?.message || 'Could not generate the invoice image.',
+        );
+      });
   }
 
   redownload(img: InvoiceImage): void {
