@@ -1,72 +1,3 @@
-// // import { Injectable } from '@angular/core';
-// // import { HttpClient } from '@angular/common/http';
-// // import { Observable } from 'rxjs';
-// // import { environment } from '../../environments/environment';
-// // import { ApiResponse, Bill, BillGroup } from '../models';
-
-// // export interface BillPayload {
-// //   customerId: string;
-// //   biltiNumber: string;
-// //   driverName: string;
-// //   driverPhone: string;
-// //   date: string;
-// //   items: { productId: string; packets: number; groupId: string }[];
-// //   groups: BillGroup[];
-// //   /** Idempotency key for new bills — re-sending the same key never creates a second bill. */
-// //   clientRequestId?: string;
-// //   discount: number;
-// //   deliveryCharges: number;
-// //   rentCharges: number;
-// //   extraCharges: number;
-// //   advanceUsed: number;
-// //   receivedAmount: number;
-// //   paymentMethod: string;
-// //   remarks: string;
-// // }
-
-// // export interface BillingContext {
-// //   previousArrears: number;
-// //   availableAdvance: number;
-// // }
-
-// // @Injectable({ providedIn: 'root' })
-// // export class BillService {
-// //   private baseUrl = `${environment.apiUrl}/bills`;
-
-// //   constructor(private http: HttpClient) {}
-
-// //   list(params: { customerId?: string; status?: string; q?: string } = {}): Observable<ApiResponse<Bill[]>> {
-// //     const query: any = {};
-// //     if (params.customerId) query.customerId = params.customerId;
-// //     if (params.status) query.status = params.status;
-// //     if (params.q) query.q = params.q;
-// //     return this.http.get<ApiResponse<Bill[]>>(this.baseUrl, { params: query });
-// //   }
-
-// //   get(id: string): Observable<ApiResponse<Bill>> {
-// //     return this.http.get<ApiResponse<Bill>>(`${this.baseUrl}/${id}`);
-// //   }
-
-// //   create(payload: BillPayload): Observable<ApiResponse<Bill>> {
-// //     return this.http.post<ApiResponse<Bill>>(this.baseUrl, payload);
-// //   }
-
-// //   update(id: string, payload: BillPayload): Observable<ApiResponse<Bill>> {
-// //     return this.http.put<ApiResponse<Bill>>(`${this.baseUrl}/${id}`, payload);
-// //   }
-
-// //   /**
-// //    * @param excludeBillId When editing an existing bill, pass its id so the
-// //    * returned previousArrears excludes it and availableAdvance includes what
-// //    * it would refund — giving an accurate editable ceiling.
-// //    */
-// //   getBillingContext(customerId: string, excludeBillId?: string): Observable<ApiResponse<BillingContext>> {
-// //     const params: any = {};
-// //     if (excludeBillId) params.excludeBillId = excludeBillId;
-// //     return this.http.get<ApiResponse<BillingContext>>(`${this.baseUrl}/context/${customerId}`, { params });
-// //   }
-// // }
-
 // import { Injectable } from '@angular/core';
 // import { HttpClient } from '@angular/common/http';
 // import { Observable } from 'rxjs';
@@ -150,7 +81,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ApiResponse, Bill, BillGroup } from '../models';
+import { ApiResponse, Bill, BillDeleteResult, BillGroup } from '../models';
 
 export interface BillPayload {
   customerId: string;
@@ -177,6 +108,7 @@ export interface BillPayload {
 export interface BillingContext {
   previousArrears: number;
   availableAdvance: number;
+  advanceCredit?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -186,12 +118,20 @@ export class BillService {
   constructor(private http: HttpClient) {}
 
   list(
-    params: { customerId?: string; status?: string; q?: string } = {},
+    params: {
+      customerId?: string;
+      status?: string;
+      q?: string;
+      startDate?: string;
+      endDate?: string;
+    } = {},
   ): Observable<ApiResponse<Bill[]>> {
     const query: any = {};
     if (params.customerId) query.customerId = params.customerId;
     if (params.status) query.status = params.status;
     if (params.q) query.q = params.q;
+    if (params.startDate) query.startDate = params.startDate;
+    if (params.endDate) query.endDate = params.endDate;
     return this.http.get<ApiResponse<Bill[]>>(this.baseUrl, { params: query });
   }
 
@@ -205,6 +145,12 @@ export class BillService {
 
   update(id: string, payload: BillPayload): Observable<ApiResponse<Bill>> {
     return this.http.put<ApiResponse<Bill>>(`${this.baseUrl}/${id}`, payload);
+  }
+
+  delete(id: string): Observable<ApiResponse<BillDeleteResult>> {
+    return this.http.delete<ApiResponse<BillDeleteResult>>(
+      `${this.baseUrl}/${id}`,
+    );
   }
 
   /**

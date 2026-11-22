@@ -191,46 +191,63 @@ import { LayoutService } from '../../services/layout.service';
           <div class="name">Tanveer</div>
           <div class="sub">Factory Ledger</div>
         </div>
-        <button class="sidebar-close" (click)="layout.closeSidebar()" aria-label="Close menu">
+        <button
+          class="sidebar-close"
+          (click)="layout.closeSidebar()"
+          aria-label="Close menu"
+        >
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
       <nav class="nav-group" (click)="layout.closeSidebar()">
         <div class="nav-label">Overview</div>
         <div class="nav-item" routerLink="/dashboard" routerLinkActive="active">
-          <span class="ic"><i class="fa-solid fa-gauge-high"></i></span>Dashboard
+          <span class="ic"><i class="fa-solid fa-gauge-high"></i></span
+          >Dashboard
         </div>
         <div class="nav-label">Records</div>
         <div class="nav-item" routerLink="/customers" routerLinkActive="active">
           <span class="ic"><i class="fa-solid fa-users"></i></span>Customers
         </div>
         <div class="nav-item" routerLink="/products" routerLinkActive="active">
-          <span class="ic"><i class="fa-solid fa-box"></i></span>Products &amp; Price
+          <span class="ic"><i class="fa-solid fa-box"></i></span>Products &amp;
+          Price
         </div>
         <div class="nav-label">Billing</div>
         <div class="nav-item" routerLink="/newbill" routerLinkActive="active">
-          <span class="ic"><i class="fa-solid fa-file-pen"></i></span>Create Bill
+          <span class="ic"><i class="fa-solid fa-file-pen"></i></span>Create
+          Bill
         </div>
         <div class="nav-item" routerLink="/advances" routerLinkActive="active">
-          <span class="ic"><i class="fa-solid fa-circle-plus"></i></span>Advance Payments
+          <span class="ic"><i class="fa-solid fa-circle-plus"></i></span>Advance
+          Payments
         </div>
         <div class="nav-item" routerLink="/arrears" routerLinkActive="active">
-          <span class="ic"><i class="fa-solid fa-triangle-exclamation"></i></span>Arrears
+          <span class="ic"
+            ><i class="fa-solid fa-triangle-exclamation"></i></span
+          >Arrears
         </div>
         <div class="nav-label">History</div>
         <div class="nav-item" routerLink="/payments" routerLinkActive="active">
-          <span class="ic"><i class="fa-solid fa-clock-rotate-left"></i></span>Payment History
+          <span class="ic"><i class="fa-solid fa-clock-rotate-left"></i></span
+          >Payment History
         </div>
         <div
           class="nav-item"
           routerLink="/billinghistory"
           routerLinkActive="active"
         >
-          <span class="ic"><i class="fa-solid fa-file-invoice"></i></span>Billing History
+          <span class="ic"><i class="fa-solid fa-file-invoice"></i></span
+          >Billing History
+        </div>
+        <div class="nav-item" routerLink="/monthly" routerLinkActive="active">
+          <span class="ic"><i class="fa-solid fa-calendar-days"></i></span
+          >Monthly Records
         </div>
         <div class="nav-label">Insights</div>
         <div class="nav-item" routerLink="/reports" routerLinkActive="active">
-          <span class="ic"><i class="fa-solid fa-chart-column"></i></span>Reports
+          <span class="ic"><i class="fa-solid fa-chart-column"></i></span
+          >Reports
         </div>
       </nav>
       <div class="sidebar-foot">

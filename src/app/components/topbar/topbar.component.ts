@@ -10,15 +10,38 @@ import { AppNotification } from '../../models';
 import { fmtDateTime, fmtMoney } from '../../shared/format.util';
 
 const PAGE_META: Record<string, { title: string; crumb: string }> = {
-  '/dashboard': { title: 'Dashboard', crumb: 'Overview of your factory ledger' },
+  '/dashboard': {
+    title: 'Dashboard',
+    crumb: 'Overview of your factory ledger',
+  },
   '/customers': { title: 'Customers', crumb: 'Manage customer records' },
-  '/products': { title: 'Products & Price', crumb: 'Manage products and pricing policy' },
-  '/newbill': { title: 'Create Bill', crumb: 'Generate a new customer invoice' },
-  '/advances': { title: 'Advance Payments', crumb: 'Track pre-paid customer balances' },
+  '/products': {
+    title: 'Products & Price',
+    crumb: 'Manage products and pricing policy',
+  },
+  '/newbill': {
+    title: 'Create Bill',
+    crumb: 'Generate a new customer invoice',
+  },
+  '/advances': {
+    title: 'Advance Payments',
+    crumb: 'Track pre-paid customer balances',
+  },
   '/arrears': { title: 'Arrears', crumb: 'Customers with outstanding dues' },
   '/payments': { title: 'Payment History', crumb: 'All received payments' },
-  '/billinghistory': { title: 'Billing History', crumb: 'Every bill ever generated' },
-  '/reports': { title: 'Reports', crumb: 'Sales, ledger & outstanding reports' },
+  '/billinghistory': {
+    title: 'Billing History',
+    crumb: 'Every bill ever generated',
+  },
+  '/reports': {
+    title: 'Reports',
+    crumb: 'Sales, ledger & outstanding reports',
+  },
+  // topbar.component.ts – add to the page-title map
+  '/monthly': {
+    title: 'Monthly Records',
+    crumb: 'Customer purchases, payments & balances by month',
+  },
 };
 
 @Component({
@@ -155,7 +178,11 @@ const PAGE_META: Record<string, { title: string; crumb: string }> = {
   template: `
     <div class="topbar">
       <div class="topbar-left">
-        <button class="hamburger" (click)="layout.toggleSidebar()" aria-label="Toggle menu">
+        <button
+          class="hamburger"
+          (click)="layout.toggleSidebar()"
+          aria-label="Toggle menu"
+        >
           <i class="fa-solid fa-bars"></i>
         </button>
         <div>
@@ -174,12 +201,17 @@ const PAGE_META: Record<string, { title: string; crumb: string }> = {
           />
         </div>
         <div class="bell" (click)="toggleDropdown()">
-          <i class="fa-solid fa-bell"></i><span class="dot" *ngIf="hasUnread"></span>
+          <i class="fa-solid fa-bell"></i
+          ><span class="dot" *ngIf="hasUnread"></span>
         </div>
       </div>
     </div>
 
-    <div class="dropdown" *ngIf="showDropdown" style="position:absolute;right:26px;top:60px;width:320px;max-width:90vw;background:var(--white);border:1px solid var(--line);border-radius:6px;box-shadow:0 20px 50px rgba(0,0,0,.18);z-index:60;overflow:hidden;">
+    <div
+      class="dropdown"
+      *ngIf="showDropdown"
+      style="position:absolute;right:26px;top:60px;width:320px;max-width:90vw;background:var(--white);border:1px solid var(--line);border-radius:6px;box-shadow:0 20px 50px rgba(0,0,0,.18);z-index:60;overflow:hidden;"
+    >
       <div class="dropdown-head">
         <span>Notifications</span>
         <button class="link-btn" (click)="markAllRead()">Mark all read</button>
@@ -189,37 +221,70 @@ const PAGE_META: Record<string, { title: string; crumb: string }> = {
           {{ n.message }}
           <div class="t">{{ fmtDateTime(n.createdAt) }}</div>
         </div>
-        <div class="notif-item muted" *ngIf="!notifications.length">No notifications yet.</div>
+        <div class="notif-item muted" *ngIf="!notifications.length">
+          No notifications yet.
+        </div>
       </div>
     </div>
 
-    <div class="modal-backdrop" *ngIf="showSearchModal" (click)="closeSearchOnBackdrop($event)">
+    <div
+      class="modal-backdrop"
+      *ngIf="showSearchModal"
+      (click)="closeSearchOnBackdrop($event)"
+    >
       <div class="modal wide">
         <div class="modal-head">
           <h3>Search Results — "{{ query }}"</h3>
-          <button class="modal-close" (click)="showSearchModal = false"><i class="fa-solid fa-xmark"></i></button>
+          <button class="modal-close" (click)="showSearchModal = false">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
         <div class="modal-body" *ngIf="results">
-          <div class="section-title">Customers ({{ results.customers.length }})</div>
+          <div class="section-title">
+            Customers ({{ results.customers.length }})
+          </div>
           <div class="notif-item" *ngFor="let c of results.customers">
             <strong>{{ c.fullName }}</strong> — {{ c.city }}, {{ c.phone }}
           </div>
-          <div class="muted" style="font-size:12.5px" *ngIf="!results.customers.length">No matches.</div>
+          <div
+            class="muted"
+            style="font-size:12.5px"
+            *ngIf="!results.customers.length"
+          >
+            No matches.
+          </div>
 
-          <div class="section-title">Products ({{ results.products.length }})</div>
+          <div class="section-title">
+            Products ({{ results.products.length }})
+          </div>
           <div class="notif-item" *ngFor="let p of results.products">
             {{ p.description }} — {{ fmtMoney(p.rate) }}
           </div>
-          <div class="muted" style="font-size:12.5px" *ngIf="!results.products.length">No matches.</div>
+          <div
+            class="muted"
+            style="font-size:12.5px"
+            *ngIf="!results.products.length"
+          >
+            No matches.
+          </div>
 
           <div class="section-title">Bills ({{ results.bills.length }})</div>
           <div class="notif-item" *ngFor="let b of results.bills">
-            {{ b.displayId }} — Bilti {{ b.biltiNumber || '—' }}, Driver {{ b.driverName || '—' }}
+            {{ b.displayId }} — Bilti {{ b.biltiNumber || '—' }}, Driver
+            {{ b.driverName || '—' }}
           </div>
-          <div class="muted" style="font-size:12.5px" *ngIf="!results.bills.length">No matches.</div>
+          <div
+            class="muted"
+            style="font-size:12.5px"
+            *ngIf="!results.bills.length"
+          >
+            No matches.
+          </div>
         </div>
         <div class="modal-foot">
-          <button class="btn btn-outline" (click)="showSearchModal = false">Close</button>
+          <button class="btn btn-outline" (click)="showSearchModal = false">
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -245,9 +310,11 @@ export class TopbarComponent implements OnInit {
 
   ngOnInit(): void {
     this.updateMeta(this.router.url);
-    this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => {
-      this.updateMeta(e.urlAfterRedirects || this.router.url);
-    });
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => {
+        this.updateMeta(e.urlAfterRedirects || this.router.url);
+      });
     this.loadNotifications();
   }
 
